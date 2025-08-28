@@ -35,7 +35,18 @@ async function init() {
       return;
     }
     
-    console.log('[LinkedIn Filter] ✅ On LinkedIn, proceeding with initialization');
+    // Check if we're specifically on the LinkedIn feed (not profile, posts, etc.)
+    const isFeedPage = location.pathname === '/feed/' || 
+                      location.pathname === '/' || 
+                      location.pathname === '/feed';
+    
+    if (!isFeedPage) {
+      console.log('[LinkedIn Filter] ❌ Not on LinkedIn feed, current path:', location.pathname);
+      console.log('[LinkedIn Filter] ❌ Skipping initialization - plugin only works on feed pages');
+      return;
+    }
+    
+    console.log('[LinkedIn Filter] ✅ On LinkedIn feed, proceeding with initialization');
     
     // Wait a bit for LinkedIn to fully load
     if (document.readyState !== 'complete') {
@@ -440,10 +451,12 @@ const urlObserver = new MutationObserver(() => {
     lastUrl = location.href;
     
     // Check if we're still on LinkedIn feed
-    if (location.hostname === 'www.linkedin.com' && 
-        (location.pathname === '/feed/' || location.pathname === '/')) {
-      
-      console.debug('[LinkedIn Filter] URL changed, reinitializing...');
+    const isFeedPage = location.pathname === '/feed/' || 
+                      location.pathname === '/' || 
+                      location.pathname === '/feed';
+    
+    if (location.hostname === 'www.linkedin.com' && isFeedPage) {
+      console.debug('[LinkedIn Filter] URL changed, still on feed - reinitializing...');
       
       // Reset session count for new page
       sessionHiddenCount = 0;
@@ -452,6 +465,9 @@ const urlObserver = new MutationObserver(() => {
       setTimeout(() => {
         reprocessAllPosts();
       }, 1000);
+    } else if (location.hostname === 'www.linkedin.com' && !isFeedPage) {
+      console.debug('[LinkedIn Filter] URL changed, left feed page:', location.pathname);
+      console.debug('[LinkedIn Filter] Plugin will not work on this page');
     }
   }
 });
@@ -468,7 +484,12 @@ setTimeout(() => {
 
 // Periodic configuration verification to ensure settings persist
 setInterval(async () => {
-  if (location.hostname.includes('linkedin.com') && currentConfig) {
+  // Only run on LinkedIn feed pages
+  const isFeedPage = location.pathname === '/feed/' || 
+                    location.pathname === '/' || 
+                    location.pathname === '/feed';
+  
+  if (location.hostname.includes('linkedin.com') && isFeedPage && currentConfig) {
     try {
       // Verify configuration is still in storage
       const storedConfig = await chrome.storage.local.get();
