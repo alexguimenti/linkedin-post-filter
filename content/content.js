@@ -20,6 +20,9 @@ let currentConfig = {
 let normalizedWordSet = new Set();
 let observer = null;
 let processingTimeout = null;
+let isProcessing = false;
+let pendingPosts = new Set();
+let performanceObserver = null;
 
 /**
  * Initialize the extension
@@ -296,7 +299,7 @@ async function processPost(postElement) {
 }
 
 /**
- * Process all existing posts on the page
+ * Process all existing posts on the page with performance optimizations
  */
 async function processAllExistingPosts() {
   const posts = getAllFeedPosts();
@@ -307,8 +310,28 @@ async function processAllExistingPosts() {
     return;
   }
   
-  const processingPromises = Array.from(posts).map(post => processPost(post));
-  await Promise.all(processingPromises);
+  // Process posts in smaller batches to avoid blocking the UI
+  const batchSize = 5;
+  const postsArray = Array.from(posts);
+  
+  for (let i = 0; i < postsArray.length; i += batchSize) {
+    const batch = postsArray.slice(i, i + batchSize);
+    
+    // Process batch
+    const batchPromises = batch.map(post => processPost(post));
+    await Promise.all(batchPromises);
+    
+    // Small delay between batches to let the UI breathe
+    if (i + batchSize < postsArray.length) {
+      await new Promise(resolve => {
+        if (window.requestIdleCallback) {
+          window.requestIdleCallback(resolve, { timeout: 100 });
+        } else {
+          setTimeout(resolve, 10);
+        }
+      });
+    }
+  }
   
   console.debug(`[LinkedIn Filter] Processed all posts. Hidden: ${sessionHiddenCount}`);
 }
@@ -330,55 +353,124 @@ function reprocessAllPosts() {
 }
 
 /**
- * Start mutation observer for new posts
+ * Start mutation observer for new posts with performance optimizations
  */
 function startMutationObserver() {
   if (observer) {
     observer.disconnect();
   }
   
+  // Use a more efficient observer configuration
   observer = new MutationObserver((mutations) => {
+    // Skip processing if already busy
+    if (isProcessing) {
+      return;
+    }
+    
     const newPosts = new Set();
     
+    // Process mutations in batches for better performance
     mutations.forEach(mutation => {
-      mutation.addedNodes.forEach(node => {
-        if (node.nodeType === Node.ELEMENT_NODE) {
-          // Check if the added node is a post or contains posts
-          const posts = getAllFeedPosts();
-          posts.forEach(post => {
-            if (node.contains(post) || node === post) {
-              if (!isPostProcessed(post)) {
-                newPosts.add(post);
+      // Only process if new nodes were added
+      if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+        mutation.addedNodes.forEach(node => {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            // Check if the added node is a post or contains posts
+            const posts = getAllFeedPosts();
+            posts.forEach(post => {
+              if (node.contains(post) || node === post) {
+                if (!isPostProcessed(post)) {
+                  newPosts.add(post);
+                }
               }
-            }
-          });
-        }
-      });
+            });
+          }
+        });
+      }
     });
     
     if (newPosts.size > 0) {
-      // Debounce processing to handle rapid DOM changes
-      if (processingTimeout) {
-        clearTimeout(processingTimeout);
-      }
+      // Add to pending posts instead of processing immediately
+      newPosts.forEach(post => pendingPosts.add(post));
       
-      processingTimeout = setTimeout(() => {
-        console.debug(`[LinkedIn Filter] Processing ${newPosts.size} new posts`);
-        
-        const processingPromises = Array.from(newPosts).map(post => processPost(post));
-        Promise.all(processingPromises).catch(error => {
-          console.error('[LinkedIn Filter] Error processing new posts:', error);
-        });
-      }, 100);
+      // Use requestIdleCallback for better performance when browser is idle
+      if (window.requestIdleCallback) {
+        window.requestIdleCallback(() => processPendingPosts(), { timeout: 1000 });
+      } else {
+        // Fallback to setTimeout with longer delay
+        if (processingTimeout) {
+          clearTimeout(processingTimeout);
+        }
+        processingTimeout = setTimeout(processPendingPosts, 200);
+      }
     }
   });
   
+  // More specific observation to reduce unnecessary callbacks
   observer.observe(document.body, {
     childList: true,
-    subtree: true
+    subtree: true,
+    // Only observe specific areas where posts are likely to appear
+    attributeFilter: ['data-urn', 'data-id']
   });
   
-  console.debug('[LinkedIn Filter] Mutation observer started');
+  console.debug('[LinkedIn Filter] Performance-optimized mutation observer started');
+}
+
+/**
+ * Process pending posts with performance optimizations
+ */
+function processPendingPosts() {
+  if (isProcessing || pendingPosts.size === 0) {
+    return;
+  }
+  
+  isProcessing = true;
+  
+  try {
+    const postsToProcess = Array.from(pendingPosts);
+    pendingPosts.clear();
+    
+    console.debug(`[LinkedIn Filter] Processing ${postsToProcess.length} pending posts`);
+    
+    // Process posts in smaller batches to avoid blocking the UI
+    const batchSize = 3;
+    let currentIndex = 0;
+    
+    function processBatch() {
+      const batch = postsToProcess.slice(currentIndex, currentIndex + batchSize);
+      
+      if (batch.length === 0) {
+        isProcessing = false;
+        return;
+      }
+      
+      // Process batch
+      batch.forEach(post => {
+        if (!isPostProcessed(post)) {
+          processPost(post).catch(error => {
+            console.error('[LinkedIn Filter] Error processing post:', error);
+          });
+        }
+      });
+      
+      currentIndex += batchSize;
+      
+      // Schedule next batch with requestIdleCallback for better performance
+      if (window.requestIdleCallback) {
+        window.requestIdleCallback(processBatch, { timeout: 500 });
+      } else {
+        setTimeout(processBatch, 50);
+      }
+    }
+    
+    // Start processing batches
+    processBatch();
+    
+  } catch (error) {
+    console.error('[LinkedIn Filter] Error in processPendingPosts:', error);
+    isProcessing = false;
+  }
 }
 
 /**
@@ -414,6 +506,21 @@ function cleanup() {
 
 // Handle page unload
 window.addEventListener('beforeunload', cleanup);
+
+// Pause observer when page is not visible for better performance
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    if (observer) {
+      observer.disconnect();
+      console.debug('[LinkedIn Filter] Observer paused (page hidden)');
+    }
+  } else {
+    if (observer && !observer.disconnected) {
+      startMutationObserver();
+      console.debug('[LinkedIn Filter] Observer resumed (page visible)');
+    }
+  }
+});
 
 // Handle extension context invalidation
 chrome.runtime.onConnect.addListener(() => {
@@ -489,4 +596,4 @@ setInterval(async () => {
       console.debug('[LinkedIn Filter] Periodic config check failed:', error);
     }
   }
-}, 10000); // Check every 10 seconds
+}, 30000); // Check every 30 seconds (reduced frequency for better performance)
