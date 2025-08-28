@@ -203,29 +203,33 @@ function normalizeText(text) {
     .replace(/https?:\/\/\S+/g, ' ') // Remove URLs
     .replace(/[@#][\p{L}\p{N}_-]+/gu, ' ') // Remove mentions and hashtags
     .replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, ' ') // Remove emojis
+    .replace(/[^\w\s\u00C0-\u017F]/g, ' ') // Remove punctuation and special characters
     .replace(/\s+/g, ' ') // Normalize whitespace
     .trim();
 }
 
 /**
  * Generate plural/singular variations of a word
- * Simple implementation: adds/removes 's' at the end
+ * More intelligent implementation to avoid false positives
  * @param {string} word 
  * @returns {string[]} Array of word variations
  */
 function generateWordVariations(word) {
-  if (!word) return [];
+  if (!word || word.length < 2) return [word]; // Don't generate variations for very short words
   
   const variations = [word];
   
-  // Add plural variation (add 's')
-  if (!word.endsWith('s')) {
-    variations.push(word + 's');
-  }
-  
-  // Add singular variation (remove 's')
-  if (word.endsWith('s') && word.length > 1) {
-    variations.push(word.slice(0, -1));
+  // Only generate variations for words longer than 2 characters
+  if (word.length > 2) {
+    // Add plural variation (add 's')
+    if (!word.endsWith('s')) {
+      variations.push(word + 's');
+    }
+    
+    // Add singular variation (remove 's')
+    if (word.endsWith('s') && word.length > 3) {
+      variations.push(word.slice(0, -1));
+    }
   }
   
   return variations;
@@ -254,6 +258,7 @@ function generateNormalizedWordSet(words) {
 
 /**
  * Check if text matches any word in the word set
+ * Uses strict word boundaries to prevent partial matches
  * @param {string} text Normalized text to check
  * @param {Set<string>} wordSet Set of normalized words to match against
  * @returns {boolean} True if any word matches
@@ -264,17 +269,22 @@ function matchesAny(text, wordSet) {
   // Convert text to lowercase for case-insensitive matching
   const normalizedText = text.toLowerCase();
   
+  // Split text into individual words for more precise matching
+  const textWords = normalizedText.split(/\s+/);
+  
   for (const word of wordSet) {
     if (!word || word.length === 0) continue;
     
-    // Use word boundaries to match complete words only
-    // \b ensures we match word boundaries (start/end of word)
-    // This prevents "ia" from matching "tecnologia", "eficiência", etc.
-    const wordBoundaryRegex = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-    
-    if (wordBoundaryRegex.test(normalizedText)) {
-      console.debug(`[LinkedIn Filter] Keyword "${word}" matched in text: "${normalizedText.substring(0, 100)}..."`);
-      return true;
+    // Check if the exact word exists in the text words
+    for (const textWord of textWords) {
+      // Clean the text word (remove punctuation, etc.)
+      const cleanTextWord = textWord.replace(/[^\w\u00C0-\u017F]/g, '');
+      
+      // Exact match (case-insensitive)
+      if (cleanTextWord.toLowerCase() === word.toLowerCase()) {
+        console.debug(`[LinkedIn Filter] Keyword "${word}" matched exactly in text: "${cleanTextWord}"`);
+        return true;
+      }
     }
   }
   
