@@ -121,13 +121,34 @@ async function loadConfig() {
     const result = await chrome.storage.local.get({
       mode: 'blacklist',
       paused: false,
-      words: []
+      words: [],
+      profiles: {
+        default: {
+          name: 'Default Profile',
+          mode: 'blacklist',
+          paused: false,
+          words: []
+        }
+      },
+      currentProfileId: 'default'
     });
     
-    currentConfig = result;
+    // Get current profile configuration
+    const currentProfileId = result.currentProfileId || 'default';
+    const profiles = result.profiles || {
+      default: {
+        name: 'Default Profile',
+        mode: 'blacklist',
+        paused: false,
+        words: []
+      }
+    };
+    
+    currentConfig = profiles[currentProfileId] || profiles.default;
     normalizedWordSet = generateNormalizedWordSet(currentConfig.words);
     
     console.log('[LinkedIn Filter] ✅ Configuration loaded successfully:', {
+      currentProfile: currentProfileId,
       mode: currentConfig.mode,
       paused: currentConfig.paused,
       wordsCount: currentConfig.words.length,

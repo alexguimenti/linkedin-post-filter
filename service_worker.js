@@ -37,11 +37,20 @@ async function setDefaultConfiguration() {
     const defaultConfig = {
       mode: 'blacklist',
       paused: false,
-      words: []
+      words: [],
+      profiles: {
+        default: {
+          name: 'Default Profile',
+          mode: 'blacklist',
+          paused: false,
+          words: []
+        }
+      },
+      currentProfileId: 'default'
     };
     
     await chrome.storage.local.set(defaultConfig);
-    console.debug('[LinkedIn Filter SW] Default configuration set');
+    console.debug('[LinkedIn Filter SW] Default configuration with profiles set');
   } catch (error) {
     console.error('[LinkedIn Filter SW] Failed to set default configuration:', error);
   }
@@ -54,9 +63,9 @@ async function ensureConfigurationExists() {
   try {
     const stored = await chrome.storage.local.get();
     
-    // Check if we have a valid configuration
-    if (!stored.mode || !stored.hasOwnProperty('paused') || !stored.hasOwnProperty('words')) {
-      console.log('[LinkedIn Filter SW] Invalid configuration detected, setting defaults...');
+    // Check if we have a valid configuration with profiles
+    if (!stored.profiles || !stored.currentProfileId || !stored.hasOwnProperty('mode') || !stored.hasOwnProperty('paused') || !stored.hasOwnProperty('words')) {
+      console.log('[LinkedIn Filter SW] Invalid configuration or missing profiles detected, setting defaults...');
       await setDefaultConfiguration();
     }
     
@@ -64,10 +73,19 @@ async function ensureConfigurationExists() {
     const currentConfig = await chrome.storage.local.get({
       mode: 'blacklist',
       paused: false,
-      words: []
+      words: [],
+      profiles: {
+        default: {
+          name: 'Default Profile',
+          mode: 'blacklist',
+          paused: false,
+          words: []
+        }
+      },
+      currentProfileId: 'default'
     });
     
-    console.log('[LinkedIn Filter SW] Configuration verified:', currentConfig);
+    console.log('[LinkedIn Filter SW] Configuration with profiles verified:', currentConfig);
   } catch (error) {
     console.error('[LinkedIn Filter SW] Failed to ensure configuration:', error);
   }

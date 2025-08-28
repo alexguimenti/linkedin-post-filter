@@ -111,6 +111,75 @@ body {
   transform: translateZ(0);
 }
 
+/* Profile selector */
+.profile-selector {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 4px;
+  /* Estabilizar o seletor */
+  contain: layout;
+}
+
+.profile-select {
+  flex: 1;
+  padding: 10px 14px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  /* Estabilizar o select */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.profile-select:hover {
+  border-color: #0a66c2;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f8ff 100%);
+  box-shadow: 0 4px 8px rgba(10, 102, 194, 0.1);
+}
+
+.profile-select:focus {
+  outline: none;
+  border-color: #0a66c2;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f8ff 100%);
+  box-shadow: 0 0 0 3px rgba(10, 102, 194, 0.15), 0 4px 8px rgba(10, 102, 194, 0.1);
+}
+
+.profile-actions {
+  display: flex;
+  gap: 6px;
+  /* Estabilizar as ações */
+  contain: layout;
+}
+
+.profile-actions .btn {
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  letter-spacing: 0.5px;
+}
+
+.profile-actions .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.profile-actions .btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 /* Mode selector */
 .mode-selector {
   display: flex;
@@ -304,28 +373,33 @@ body {
 }
 
 .btn-primary {
-  background: #0a66c2;
+  background: linear-gradient(135deg, #0a66c2 0%, #004182 100%);
   color: white;
+  border: 1px solid #004182;
 }
 
 .btn-secondary {
-  background: #6c757d;
+  background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
   color: white;
+  border: 1px solid #357abd;
 }
 
 .btn-success {
-  background: #28a745;
+  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
   color: white;
+  border: 1px solid #27ae60;
 }
 
 .btn-info {
-  background: #17a2b8;
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
   color: white;
+  border: 1px solid #2980b9;
 }
 
 .btn-danger {
-  background: #dc3545;
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
   color: white;
+  border: 1px solid #c0392b;
 }
 
 /* Status message */

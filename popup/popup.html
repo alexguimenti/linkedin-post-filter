@@ -20,6 +20,20 @@
 
   <!-- Main content -->
   <main class="content">
+    <!-- Profile selector -->
+    <section class="section">
+      <h2 class="section-title">Profile</h2>
+      <div class="profile-selector">
+        <select id="profileSelect" class="profile-select">
+          <option value="default">Default Profile</option>
+        </select>
+        <div class="profile-actions">
+          <button id="newProfileBtn" class="btn btn-secondary" title="Create new profile">➕ New</button>
+          <button id="deleteProfileBtn" class="btn btn-danger" title="Delete current profile" style="display: none;">🗑️ Delete</button>
+        </div>
+      </div>
+    </section>
+
     <!-- Mode selector -->
     <section class="section">
       <h2 class="section-title">Filter Mode</h2>

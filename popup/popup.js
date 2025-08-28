@@ -13,6 +13,18 @@ let currentConfig = {
   words: []
 };
 
+// Profiles system
+let profiles = {
+  default: {
+    name: 'Default Profile',
+    mode: 'blacklist',
+    paused: false,
+    words: []
+  }
+};
+
+let currentProfileId = 'default';
+
 /**
  * Initialize the popup
  */
@@ -43,6 +55,11 @@ async function init() {
  */
 function getElements() {
   elements = {
+    // Profile selection
+    profileSelect: document.getElementById('profileSelect'),
+    newProfileBtn: document.getElementById('newProfileBtn'),
+    deleteProfileBtn: document.getElementById('deleteProfileBtn'),
+    
     // Mode selection
     modeBlacklist: document.getElementById('modeBlacklist'),
     modeWhitelist: document.getElementById('modeWhitelist'),
@@ -69,6 +86,11 @@ function getElements() {
  * Set up event listeners
  */
 function setupEventListeners() {
+  // Profile selection
+  elements.profileSelect.addEventListener('change', handleProfileChange);
+  elements.newProfileBtn.addEventListener('click', handleNewProfile);
+  elements.deleteProfileBtn.addEventListener('click', handleDeleteProfile);
+  
   // Mode change
   elements.modeBlacklist.addEventListener('change', handleModeChange);
   elements.modeWhitelist.addEventListener('change', handleModeChange);
@@ -140,14 +162,39 @@ async function loadConfig() {
     const result = await chrome.storage.local.get({
       mode: 'blacklist',
       paused: false,
-      words: []
+      words: [],
+      profiles: {
+        default: {
+          name: 'Default Profile',
+          mode: 'blacklist',
+          paused: false,
+          words: []
+        }
+      },
+      currentProfileId: 'default'
     });
     
-    currentConfig = result;
+    // Load profiles
+    profiles = result.profiles || {
+      default: {
+        name: 'Default Profile',
+        mode: 'blacklist',
+        paused: false,
+        words: []
+      }
+    };
+    
+    currentProfileId = result.currentProfileId || 'default';
+    
+    // Load current profile configuration
+    currentConfig = profiles[currentProfileId] || profiles.default;
+    
     console.log('[LinkedIn Filter Popup] ✅ Configuration loaded successfully:', {
+      currentProfile: currentProfileId,
       mode: currentConfig.mode,
       paused: currentConfig.paused,
-      wordsCount: currentConfig.words.length
+      wordsCount: currentConfig.words.length,
+      profilesCount: Object.keys(profiles).length
     });
     
     // Verify configuration persistence
@@ -156,6 +203,9 @@ async function loadConfig() {
     } else {
       console.log('[LinkedIn Filter Popup] ⚠️ No keywords configured');
     }
+    
+    // Update profile selector
+    updateProfileSelector();
     
   } catch (error) {
     console.error('[LinkedIn Filter Popup] ❌ Failed to load config:', error);
@@ -169,6 +219,29 @@ async function loadConfig() {
       words: []
     };
   }
+}
+
+/**
+ * Update profile selector with available profiles
+ */
+function updateProfileSelector() {
+  // Clear existing options
+  elements.profileSelect.innerHTML = '';
+  
+  // Add profile options
+  Object.keys(profiles).forEach(profileId => {
+    const profile = profiles[profileId];
+    const option = document.createElement('option');
+    option.value = profileId;
+    option.textContent = profile.name;
+    elements.profileSelect.appendChild(option);
+  });
+  
+  // Set current profile
+  elements.profileSelect.value = currentProfileId;
+  
+  // Show/hide delete button (don't allow deleting default profile)
+  elements.deleteProfileBtn.style.display = currentProfileId === 'default' ? 'none' : 'block';
 }
 
 /**
@@ -192,6 +265,108 @@ function updateUI() {
   
   // Update visual state
   updateVisualState();
+}
+
+/**
+ * Handle profile change
+ */
+async function handleProfileChange() {
+  const newProfileId = elements.profileSelect.value;
+  
+  if (newProfileId !== currentProfileId) {
+    // Save current profile before switching
+    await saveCurrentProfile();
+    
+    // Switch to new profile
+    currentProfileId = newProfileId;
+    currentConfig = { ...profiles[currentProfileId] };
+    
+    // Update UI
+    updateUI();
+    
+    // Save current profile ID
+    await chrome.storage.local.set({ currentProfileId });
+    
+    // Trigger reprocessing in content script
+    await triggerReprocess();
+    
+    showStatusMessage(`Switched to profile: ${profiles[currentProfileId].name}`, 'info');
+  }
+}
+
+/**
+ * Handle new profile creation
+ */
+async function handleNewProfile() {
+  const profileName = prompt('Enter profile name:');
+  
+  if (profileName && profileName.trim()) {
+    const profileId = 'profile_' + Date.now();
+    
+    // Create new profile with current settings
+    profiles[profileId] = {
+      name: profileName.trim(),
+      mode: currentConfig.mode,
+      paused: currentConfig.paused,
+      words: [...currentConfig.words]
+    };
+    
+    // Save profiles
+    await chrome.storage.local.set({ profiles });
+    
+    // Update UI
+    updateProfileSelector();
+    
+    showStatusMessage(`Profile "${profileName}" created successfully!`, 'success');
+  }
+}
+
+/**
+ * Handle profile deletion
+ */
+async function handleDeleteProfile() {
+  if (currentProfileId === 'default') {
+    showStatusMessage('Cannot delete default profile', 'error');
+    return;
+  }
+  
+  const profileName = profiles[currentProfileId].name;
+  const confirmDelete = confirm(`Are you sure you want to delete profile "${profileName}"?`);
+  
+  if (confirmDelete) {
+    // Delete profile
+    delete profiles[currentProfileId];
+    
+    // Switch to default profile
+    currentProfileId = 'default';
+    currentConfig = { ...profiles.default };
+    
+    // Save changes
+    await chrome.storage.local.set({ 
+      profiles,
+      currentProfileId 
+    });
+    
+    // Update UI
+    updateProfileSelector();
+    updateUI();
+    
+    // Trigger reprocessing
+    await triggerReprocess();
+    
+    showStatusMessage(`Profile "${profileName}" deleted successfully!`, 'success');
+  }
+}
+
+/**
+ * Save current profile configuration
+ */
+async function saveCurrentProfile() {
+  // Update current profile with current config
+  profiles[currentProfileId] = { ...currentConfig };
+  
+  // Save to storage
+  await chrome.storage.local.set({ profiles });
 }
 
 /**
@@ -252,13 +427,14 @@ async function handleSave() {
     // Update configuration
     currentConfig.words = normalizedKeywords;
     
-    // Save to storage
+    // Save to current profile and storage
+    await saveCurrentProfile();
     await saveConfig();
     
     // Trigger reprocessing in content script
     await triggerReprocess();
     
-    showStatusMessage(`Configuration saved! ${normalizedKeywords.length} words configured.`, 'success');
+    showStatusMessage(`Configuration saved to profile "${profiles[currentProfileId].name}"! ${normalizedKeywords.length} words configured.`, 'success');
     
   } catch (error) {
     console.error('[LinkedIn Filter Popup] Save failed:', error);
@@ -275,8 +451,10 @@ async function handleSave() {
 async function handleExport() {
   try {
     const exportData = {
+      profileName: profiles[currentProfileId].name,
       mode: currentConfig.mode,
-      words: currentConfig.words
+      words: currentConfig.words,
+      exportDate: new Date().toISOString()
     };
     
     const jsonString = JSON.stringify(exportData, null, 2);
@@ -286,7 +464,7 @@ async function handleExport() {
     // Create download link
     const link = document.createElement('a');
     link.href = url;
-    link.download = `linkedin-filter-config-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `linkedin-filter-${profiles[currentProfileId].name.replace(/[^a-zA-Z0-9]/g, '-')}-${new Date().toISOString().split('T')[0]}.json`;
     
     // Trigger download
     document.body.appendChild(link);
@@ -295,7 +473,7 @@ async function handleExport() {
     
     URL.revokeObjectURL(url);
     
-    showStatusMessage('Configuration exported successfully!', 'success');
+    showStatusMessage(`Profile "${profiles[currentProfileId].name}" exported successfully!`, 'success');
     
   } catch (error) {
     console.error('[LinkedIn Filter Popup] Export failed:', error);
@@ -337,6 +515,38 @@ async function handleFileImport(event) {
       throw new Error('Invalid file format. Expected: { "words": [...] }');
     }
     
+    // Check if this is a profile import
+    if (importData.profileName && importData.profileName !== profiles[currentProfileId].name) {
+      const createNewProfile = confirm(
+        `This file contains profile "${importData.profileName}". Would you like to create a new profile with this data?`
+      );
+      
+      if (createNewProfile) {
+        // Create new profile
+        const profileId = 'profile_' + Date.now();
+        profiles[profileId] = {
+          name: importData.profileName,
+          mode: importData.mode || currentConfig.mode,
+          paused: false,
+          words: importData.words
+        };
+        
+        // Save profiles
+        await chrome.storage.local.set({ profiles });
+        
+        // Switch to new profile
+        currentProfileId = profileId;
+        currentConfig = { ...profiles[profileId] };
+        
+        // Update UI
+        updateProfileSelector();
+        updateUI();
+        
+        showStatusMessage(`New profile "${importData.profileName}" created and imported!`, 'success');
+        return;
+      }
+    }
+    
     // Merge with current configuration
     const normalizedWords = normalizeKeywords(importData.words);
     const mergedWords = [...new Set([...currentConfig.words, ...normalizedWords])];
@@ -351,10 +561,11 @@ async function handleFileImport(event) {
       updateUI();
     }
     
+    await saveCurrentProfile();
     await saveConfig();
     await triggerReprocess();
     
-    showStatusMessage(`Import completed! ${normalizedWords.length} words added.`, 'success');
+    showStatusMessage(`Import completed! ${normalizedWords.length} words added to current profile.`, 'success');
     
   } catch (error) {
     console.error('[LinkedIn Filter Popup] Import failed:', error);
@@ -491,8 +702,8 @@ async function handleCopyPrompt() {
       ? currentKeywords.slice(0, 5).join(', ') 
       : 'job, vacancy, internship, developer, marketing';
     
-         // Create the prompt
-     const prompt = `# LinkedIn Keyword Filter Prompt
+    // Create the prompt
+    const prompt = `# LinkedIn Keyword Filter Prompt - ${profiles[currentProfileId].name}
 
 I want to create a list of keywords to use in a LinkedIn post filter.  
 
