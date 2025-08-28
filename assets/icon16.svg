@@ -1,0 +1,8 @@
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <rect width="16" height="16" rx="3" fill="#0a66c2"/>
+  <!-- LinkedIn-style icon -->
+  <path d="M3 6h2v6H3V6zm1-1.5c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm4 1.5h2v.5c.3-.4.8-.5 1.5-.5 1.5 0 2.5 1 2.5 2.5V12h-2V9c0-.5-.2-.8-.8-.8s-.7.3-.7.8v3H8V6z" fill="white"/>
+  <!-- Filter indicator -->
+  <circle cx="12" cy="4" r="2" fill="#dc3545"/>
+  <path d="M11 3.5h2v1h-2z" fill="white"/>
+</svg>

@@ -1,0 +1,23 @@
+<svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+  <rect width="48" height="48" rx="8" fill="#0a66c2"/>
+  
+  <!-- LinkedIn-style professional icon -->
+  <g fill="white">
+    <!-- Person 1 -->
+    <rect x="8" y="20" width="6" height="18"/>
+    <circle cx="11" cy="15" r="3"/>
+    
+    <!-- Person 2 with connection -->
+    <rect x="24" y="20" width="6" height="18"/>
+    <path d="M24 20h6v2c1-1.5 2.5-2 4.5-2 4.5 0 7.5 3 7.5 7.5V38h-6v-9c0-1.5-.7-2.5-2.5-2.5s-2.5 1-2.5 2.5v9h-6V20z"/>
+    <circle cx="27" cy="15" r="3"/>
+  </g>
+  
+  <!-- Filter indicator (larger) -->
+  <circle cx="36" cy="12" r="6" fill="#dc3545"/>
+  <g fill="white" stroke="white" stroke-width="1">
+    <path d="M33 10h6v1.5h-6z"/>
+    <path d="M34 12h4v1.5h-4z"/>
+    <path d="M35 14h2v1.5h-2z"/>
+  </g>
+</svg>

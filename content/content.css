@@ -1,0 +1,75 @@
+/* LinkedIn Keyword Filter - Content Script Styles */
+
+/* Keyword highlighting styles */
+.lkw-highlight {
+  background: linear-gradient(120deg, #ffd700 0%, #ffed4e 100%);
+  color: #000;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(255, 215, 0, 0.3);
+  text-decoration: none;
+  display: inline;
+  line-height: inherit;
+  font-size: inherit;
+  font-family: inherit;
+  /* Ensure the highlight doesn't break text flow */
+  white-space: nowrap;
+  /* Smooth transition for better UX */
+  transition: all 0.2s ease;
+}
+
+/* Hover effect for highlights */
+.lkw-highlight:hover {
+  background: linear-gradient(120deg, #ffed4e 0%, #ffd700 100%);
+  box-shadow: 0 2px 6px rgba(255, 215, 0, 0.4);
+  transform: translateY(-1px);
+}
+
+/* Animation for new highlights */
+.lkw-highlight {
+  animation: highlightFadeIn 0.3s ease-in-out;
+}
+
+@keyframes highlightFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Ensure highlights work well in different text contexts */
+.lkw-highlighted {
+  /* This class is added to elements that contain highlights */
+  position: relative;
+}
+
+/* Fix for LinkedIn's text styling */
+.lkw-highlighted .lkw-highlight {
+  /* Override any conflicting LinkedIn styles */
+  background: linear-gradient(120deg, #ffd700 0%, #ffed4e 100%) !important;
+  color: #000 !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  border: none !important;
+  outline: none !important;
+}
+
+/* Ensure highlights are visible in different themes */
+.lkw-highlighted .lkw-highlight {
+  /* Force visibility */
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .lkw-highlight {
+    padding: 1px 3px;
+    font-size: 0.95em;
+  }
+}
