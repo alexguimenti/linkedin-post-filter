@@ -10,8 +10,7 @@ let elements = {};
 let currentConfig = {
   mode: 'blacklist',
   paused: false,
-  words: [],
-  highlight: false
+  words: []
 };
 
 /**
@@ -50,7 +49,6 @@ function getElements() {
     
     // Toggles
     pauseFilter: document.getElementById('pauseFilter'),
-    highlightKeywords: document.getElementById('highlightKeywords'),
     
     // Keywords input
     keywordsInput: document.getElementById('keywordsInput'),
@@ -78,8 +76,7 @@ function setupEventListeners() {
   // Pause toggle
   elements.pauseFilter.addEventListener('change', handlePauseChange);
   
-  // Highlight toggle
-  elements.highlightKeywords.addEventListener('change', handleHighlightChange);
+
   
   // Buttons
   elements.saveBtn.addEventListener('click', handleSave);
@@ -112,13 +109,12 @@ function updateVisualState() {
   const blacklistContainer = elements.modeBlacklist.closest('.radio-option');
   const whitelistContainer = elements.modeWhitelist.closest('.radio-option');
   const pauseContainer = elements.pauseFilter.closest('.pause-filter');
-  const highlightContainer = elements.highlightKeywords.closest('.highlight-filter');
+
 
   // Remove all checked classes first
   blacklistContainer.classList.remove('checked');
   whitelistContainer.classList.remove('checked');
   pauseContainer.classList.remove('checked');
-  highlightContainer.classList.remove('checked');
 
   // Add checked class to active elements
   if (elements.modeBlacklist.checked) {
@@ -131,9 +127,7 @@ function updateVisualState() {
     pauseContainer.classList.add('checked');
   }
 
-  if (elements.highlightKeywords.checked) {
-    highlightContainer.classList.add('checked');
-  }
+
 }
 
 /**
@@ -146,16 +140,14 @@ async function loadConfig() {
     const result = await chrome.storage.local.get({
       mode: 'blacklist',
       paused: false,
-      words: [],
-      highlight: false
+      words: []
     });
     
     currentConfig = result;
     console.log('[LinkedIn Filter Popup] ✅ Configuration loaded successfully:', {
       mode: currentConfig.mode,
       paused: currentConfig.paused,
-      wordsCount: currentConfig.words.length,
-      highlight: currentConfig.highlight
+      wordsCount: currentConfig.words.length
     });
     
     // Verify configuration persistence
@@ -174,8 +166,7 @@ async function loadConfig() {
     currentConfig = {
       mode: 'blacklist',
       paused: false,
-      words: [],
-      highlight: false
+      words: []
     };
   }
 }
@@ -194,8 +185,7 @@ function updateUI() {
   // Set pause state
   elements.pauseFilter.checked = currentConfig.paused;
   
-  // Set highlight state
-  elements.highlightKeywords.checked = currentConfig.highlight || false;
+
   
   // Set keywords
   elements.keywordsInput.value = currentConfig.words.join('\n');
@@ -232,19 +222,7 @@ async function handlePauseChange() {
   }
 }
 
-/**
- * Handle highlight toggle change
- */
-async function handleHighlightChange() {
-  const newHighlight = elements.highlightKeywords.checked;
-  
-  if (newHighlight !== currentConfig.highlight) {
-    currentConfig.highlight = newHighlight;
-    updateVisualState(); // Update visual state immediately
-    await saveConfig();
-    showStatusMessage(newHighlight ? 'Keyword highlighting enabled' : 'Keyword highlighting disabled', 'info');
-  }
-}
+
 
 /**
  * Handle auto-save on textarea blur

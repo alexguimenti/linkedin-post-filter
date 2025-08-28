@@ -37,8 +37,7 @@ async function setDefaultConfiguration() {
     const defaultConfig = {
       mode: 'blacklist',
       paused: false,
-      words: [],
-      highlight: false
+      words: []
     };
     
     await chrome.storage.local.set(defaultConfig);
@@ -65,15 +64,8 @@ async function ensureConfigurationExists() {
     const currentConfig = await chrome.storage.local.get({
       mode: 'blacklist',
       paused: false,
-      words: [],
-      highlight: false
+      words: []
     });
-    
-    // Only update if something is missing
-    if (!stored.hasOwnProperty('highlight')) {
-      await chrome.storage.local.set({ highlight: false });
-      console.log('[LinkedIn Filter SW] Added missing highlight field');
-    }
     
     console.log('[LinkedIn Filter SW] Configuration verified:', currentConfig);
   } catch (error) {

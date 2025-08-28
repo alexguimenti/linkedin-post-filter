@@ -7,7 +7,6 @@ A Chrome extension (Manifest V3) that filters posts from the main LinkedIn feed 
 ### 🔍 **Smart Filters**
 - **Block List**: Hides posts containing specific words
 - **Allow List**: Shows only posts containing specific words
-- **Highlight**: **NEW!** Highlights keywords in allow list mode for easy identification
 - **Pause filter**: Shows all posts temporarily
 
 ### 🎯 **Advanced Matching**
@@ -17,12 +16,7 @@ A Chrome extension (Manifest V3) that filters posts from the main LinkedIn feed 
 - **Simple plurals**: "trabalho" filters "trabalhos"
 - **Ignores**: hashtags, mentions (@user), links and emojis
 
-### 🎨 **Visual Highlighting (Allow List Mode)**
-- **Golden background**: Keywords highlighted with golden yellow background
-- **Hover effect**: Visual effect when hovering over highlights
-- **Smooth animation**: Elegant transition when applying highlights
-- **Responsive**: Works on all screen sizes
-- **Automatic**: Highlights are applied/removed automatically when changing modes
+
 
 ### 🤖 **AI-Powered Keyword Generation** ⭐ **NEW!**
 - **LLM Prompt Button**: Copy optimized prompts for ChatGPT, Claude, Gemini, etc.
@@ -66,7 +60,6 @@ A Chrome extension (Manifest V3) that filters posts from the main LinkedIn feed 
 
 ### 3. **Allow List Mode**
 - Posts **without** keywords are hidden
-- Keywords are **highlighted** with golden background
 - Ideal for focusing on specific topics
 
 ### 4. **AI-Powered Keyword Expansion** ⭐ **NEW!**
@@ -82,17 +75,7 @@ A Chrome extension (Manifest V3) that filters posts from the main LinkedIn feed 
 - **Export**: Save current settings
 - **Counter**: See how many posts were hidden in the session
 
-## 🎨 Highlight Example
 
-**Allow List Mode** with keywords: "job", "vacancy", "developer"
-
-```
-I'm looking for a [vacancy] as a [developer] frontend. 
-I have experience with React and Node.js. If anyone knows 
-of a [job] opportunity, let me know!
-```
-
-Keywords appear highlighted with a golden yellow background, making it easy to identify why the post is being shown.
 
 ## 🤖 LLM Prompt Example
 
@@ -131,7 +114,7 @@ The LLM will then generate a comprehensive list of related keywords that you can
 - **`manifest.json`**: Extension configuration
 - **`content/content.js`**: Main filtering logic
 - **`content/dom-utils.js`**: DOM utilities and highlighting
-- **`content/content.css`**: Styles for highlights
+
 - **`popup/popup.html/js/css`**: User interface
 - **`service_worker.js`**: Background worker
 
@@ -150,8 +133,7 @@ The LLM will then generate a comprehensive list of related keywords that you can
 1. Open demo files in browser
 2. Test different keywords
 3. Switch between block list/allow list modes
-4. Verify highlights work correctly
-5. Test the LLM prompt button functionality
+4. Test the LLM prompt button functionality
 
 ## 📱 Compatibility
 
@@ -229,7 +211,7 @@ This project is under the MIT license. See the `LICENSE` file for details.
 - ✅ Block list/allow list filters
 - ✅ Intelligent word matching
 - ✅ Intuitive popup interface
-- ✅ Keyword highlighting system for allow list mode
+
 - ✅ Enhanced visual styles
 - ✅ Smooth animations
 - ✅ Interactive demo

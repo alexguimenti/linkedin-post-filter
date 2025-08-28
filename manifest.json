@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "LinkedIn Keyword Filter",
   "version": "1.0.0",
-  "description": "Filter LinkedIn feed posts by blacklist or whitelist keywords. 100% local, no tracking.",
+  "description": "Filter LinkedIn feed posts by block list or allow list keywords. 100% local, no tracking.",
   "permissions": [
     "storage"
   ],
@@ -20,7 +20,6 @@
   "content_scripts": [
     {
       "matches": ["https://www.linkedin.com/*"],
-      "css": ["content/content.css"],
       "js": ["content/dom-utils.js", "content/content.js"],
       "run_at": "document_idle"
     }

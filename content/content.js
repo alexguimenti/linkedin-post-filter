@@ -13,8 +13,7 @@ let sessionHiddenCount = 0;
 let currentConfig = {
   mode: 'blacklist',
   paused: false,
-  words: [],
-  highlight: false
+  words: []
 };
 
 // Processing state
@@ -119,8 +118,7 @@ async function loadConfig() {
     const result = await chrome.storage.local.get({
       mode: 'blacklist',
       paused: false,
-      words: [],
-      highlight: false
+      words: []
     });
     
     currentConfig = result;
@@ -130,7 +128,6 @@ async function loadConfig() {
       mode: currentConfig.mode,
       paused: currentConfig.paused,
       wordsCount: currentConfig.words.length,
-      highlight: currentConfig.highlight,
       normalizedWordsCount: normalizedWordSet.size
     });
     
@@ -149,8 +146,7 @@ async function loadConfig() {
     currentConfig = {
       mode: 'blacklist',
       paused: false,
-      words: [],
-      highlight: false
+      words: []
     };
     normalizedWordSet = new Set();
   }
@@ -188,16 +184,7 @@ function setupStorageListener() {
       configChanged = true;
     }
     
-    if (changes.highlight) {
-      currentConfig.highlight = changes.highlight.newValue;
-      configChanged = true;
-      
-      // Remove highlights if highlighting is disabled
-      if (!currentConfig.highlight) {
-        removeAllHighlights();
-        console.log('[LinkedIn Filter] Removed highlights (highlighting disabled)');
-      }
-    }
+
     
     if (configChanged) {
       console.debug('[LinkedIn Filter] Config updated:', currentConfig);
@@ -300,10 +287,7 @@ async function processPost(postElement) {
     } else {
       showPost(postElement);
       
-      // Highlight keywords in whitelist mode only if highlighting is enabled
-      if (currentConfig.mode === 'whitelist' && hasMatch && currentConfig.highlight) {
-        processTextHighlighting(postElement, normalizedWordSet, currentConfig.mode);
-      }
+
     }
     
   } catch (error) {
