@@ -166,7 +166,7 @@ function extractPostText(postElement) {
   const textElements = getTextContentElements(postElement);
   
   if (textElements.length === 0) {
-    console.debug('[LinkedIn Filter] No text elements found');
+    console.debug('[LinkedIn Filter] No text elements found in post:', postElement);
     return '';
   }
   
@@ -174,16 +174,23 @@ function extractPostText(postElement) {
   let selectedElement = textElements[0];
   let maxLength = 0;
   
-  textElements.forEach(element => {
+  textElements.forEach((element, index) => {
     const text = element.textContent || '';
     if (text.length > maxLength) {
       maxLength = text.length;
       selectedElement = element;
     }
+    console.debug(`[LinkedIn Filter] Text element ${index}: ${text.length} chars - "${text.substring(0, 50)}..."`);
   });
   
   const extractedText = selectedElement.textContent || '';
-  console.debug(`[LinkedIn Filter] Extracted text (${extractedText.length} chars):`, extractedText.substring(0, 100) + '...');
+  
+  // Additional logging for debugging
+  if (extractedText.length > 0) {
+    console.debug(`[LinkedIn Filter] Selected text element with ${extractedText.length} chars: "${extractedText.substring(0, 100)}..."`);
+  } else {
+    console.warn('[LinkedIn Filter] Warning: Selected text element has no content');
+  }
   
   return extractedText;
 }
@@ -292,6 +299,117 @@ function matchesAny(text, wordSet) {
 }
 
 /**
+ * Highlight found keywords by converting them to bold in the post text
+ * Preserves all original formatting while making keywords bold
+ * @param {HTMLElement} postElement 
+ * @param {Set<string>} wordSet 
+ */
+function highlightFoundKeywords(postElement, wordSet) {
+  if (!wordSet || wordSet.size === 0) return;
+  
+  try {
+    const textElements = getTextContentElements(postElement);
+    
+    textElements.forEach(textElement => {
+      if (textElement.hasAttribute('data-lkw-highlighted')) return; // Skip if already highlighted
+      
+      // Store original HTML content to preserve formatting
+      const originalHTML = textElement.innerHTML;
+      
+      // Create a temporary container to work with the HTML
+      const tempContainer = document.createElement('div');
+      tempContainer.innerHTML = originalHTML;
+      
+      let hasChanges = false;
+      
+      // Function to process text nodes and make keywords bold
+      function processTextNode(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const text = node.textContent;
+          
+          // Check each keyword against this text node
+          wordSet.forEach(keyword => {
+            if (keyword && keyword.length > 0) {
+              // Create regex for case-insensitive matching with word boundaries
+              const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              const regex = new RegExp(`\\b${escapedKeyword}\\b`, 'gi');
+              const matches = text.match(regex);
+              
+              if (matches && matches.length > 0) {
+                hasChanges = true;
+                
+                // Create a document fragment to hold the processed content
+                const fragment = document.createDocumentFragment();
+                let lastIndex = 0;
+                
+                matches.forEach(match => {
+                  const matchIndex = text.indexOf(match, lastIndex);
+                  
+                  // Add text before the match
+                  if (matchIndex > lastIndex) {
+                    fragment.appendChild(document.createTextNode(text.substring(lastIndex, matchIndex)));
+                  }
+                  
+                  // Create bold element for the keyword
+                  const boldElement = document.createElement('strong');
+                  boldElement.textContent = match;
+                  boldElement.style.fontWeight = 'bold';
+                  boldElement.style.color = '#0a66c2'; // LinkedIn blue color
+                  fragment.appendChild(boldElement);
+                  
+                  lastIndex = matchIndex + match.length;
+                });
+                
+                // Add remaining text after the last match
+                if (lastIndex < text.length) {
+                  fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
+                }
+                
+                // Replace the text node with the fragment
+                node.parentNode.replaceChild(fragment, node);
+              }
+            }
+          });
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          // Recursively process child nodes to preserve nested formatting
+          Array.from(node.childNodes).forEach(childNode => {
+            processTextNode(childNode);
+          });
+        }
+      }
+      
+      // Process all nodes in the container
+      Array.from(tempContainer.childNodes).forEach(processTextNode);
+      
+      // Only update if changes were made
+      if (hasChanges) {
+        textElement.innerHTML = tempContainer.innerHTML;
+        textElement.setAttribute('data-lkw-highlighted', '1');
+        console.debug('[LinkedIn Filter] Keywords highlighted in bold while preserving formatting');
+      }
+    });
+    
+  } catch (error) {
+    console.error('[LinkedIn Filter] Error highlighting keywords:', error);
+  }
+}
+
+/**
+ * Remove keyword highlighting from a post
+ * @param {HTMLElement} postElement 
+ */
+function removeKeywordHighlighting(postElement) {
+  try {
+    const textElements = postElement.querySelectorAll('[data-lkw-highlighted]');
+    textElements.forEach(element => {
+      element.removeAttribute('data-lkw-highlighted');
+    });
+  } catch (error) {
+    console.debug('[LinkedIn Filter] Error removing keyword highlighting:', error);
+  }
+}
+
+/**
  * Hide a post element
  * @param {HTMLElement} postElement 
  */
@@ -336,6 +454,7 @@ function resetProcessingMarkers() {
   posts.forEach(post => {
     post.removeAttribute('data-lkw-processed');
     post.removeAttribute('data-lkw-expanded');
+    post.removeAttribute('data-lkw-highlighted');
   });
   console.debug(`[LinkedIn Filter] Reset processing markers on ${posts.size} posts`);
 }

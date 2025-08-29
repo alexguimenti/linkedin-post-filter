@@ -311,8 +311,14 @@ async function processPost(postElement) {
     } else {
       showPost(postElement);
       
-
+      // Highlight found keywords in visible posts (for whitelist mode)
+      if (currentConfig.mode === 'whitelist' && hasMatch) {
+        highlightFoundKeywords(postElement, normalizedWordSet);
+      }
     }
+    
+    // Update last processed time for health monitoring
+    lastProcessedTime = Date.now();
     
   } catch (error) {
     console.error('[LinkedIn Filter] Error processing post:', error);
@@ -525,6 +531,165 @@ function cleanup() {
   }
 }
 
+/**
+ * Remove all highlights from posts
+ */
+function removeAllHighlights() {
+  const allPosts = getAllFeedPosts();
+  allPosts.forEach(post => {
+    removeKeywordHighlighting(post);
+  });
+  console.debug('[LinkedIn Filter] Removed all highlights');
+}
+
+/**
+ * Check observer health and recover if needed
+ */
+function checkObserverHealth() {
+  try {
+    const currentTime = Date.now();
+    const timeSinceLastProcess = currentTime - lastProcessedTime;
+    
+    // Check if observer is still working
+    if (observer && !observer.disconnected) {
+      // If no posts processed in the last 10 seconds, observer might be stuck
+      if (timeSinceLastProcess > 10000 && !isProcessing) {
+        console.warn('[LinkedIn Filter] ⚠️ Observer health check: No posts processed recently, observer might be stuck');
+        consecutiveFailures++;
+        
+        if (consecutiveFailures >= 2) {
+          console.warn('[LinkedIn Filter] 🔄 Observer appears stuck, restarting...');
+          restartObserver();
+          consecutiveFailures = 0;
+        }
+      } else {
+        // Reset failure counter if processing is working
+        consecutiveFailures = 0;
+      }
+    } else {
+      console.warn('[LinkedIn Filter] ⚠️ Observer is disconnected, restarting...');
+      restartObserver();
+    }
+    
+    // Check if we're still on a feed page
+    const isFeedPage = location.pathname === '/feed/' || 
+                      location.pathname === '/' || 
+                      location.pathname === '/feed';
+    
+    if (location.hostname.includes('linkedin.com') && isFeedPage) {
+      // Force reprocess if no posts were processed recently
+      if (timeSinceLastProcess > 15000 && !isProcessing) {
+        console.log('[LinkedIn Filter] 🔍 Health check: Force reprocessing posts...');
+        reprocessAllPosts();
+      }
+    }
+    
+  } catch (error) {
+    console.error('[LinkedIn Filter] Error in health check:', error);
+    restartObserver();
+  }
+}
+
+/**
+ * Restart the mutation observer
+ */
+function restartObserver() {
+  try {
+    console.log('[LinkedIn Filter] 🔄 Restarting mutation observer...');
+    
+    // Clean up existing observer
+    if (observer) {
+      observer.disconnect();
+      observer = null;
+    }
+    
+    // Reset processing state
+    isProcessing = false;
+    pendingPosts.clear();
+    if (processingTimeout) {
+      clearTimeout(processingTimeout);
+      processingTimeout = null;
+    }
+    
+    // Reset processing markers to allow reprocessing
+    resetProcessingMarkers();
+    
+    // Restart observer
+    startMutationObserver();
+    
+    // Force reprocess all posts
+    setTimeout(() => {
+      reprocessAllPosts();
+    }, 1000);
+    
+    console.log('[LinkedIn Filter] ✅ Observer restarted successfully');
+    
+  } catch (error) {
+    console.error('[LinkedIn Filter] Error restarting observer:', error);
+  }
+}
+
+/**
+ * Debug function to check for unprocessed posts
+ */
+function debugUnprocessedPosts() {
+  try {
+    const allPosts = getAllFeedPosts();
+    const processedPosts = [];
+    const unprocessedPosts = [];
+    
+    allPosts.forEach(post => {
+      if (isPostProcessed(post)) {
+        processedPosts.push(post);
+      } else {
+        unprocessedPosts.push(post);
+      }
+    });
+    
+    console.log(`[LinkedIn Filter] 🔍 Debug: Found ${allPosts.size} total posts`);
+    console.log(`[LinkedIn Filter] 🔍 Debug: ${processedPosts.length} processed, ${unprocessedPosts.length} unprocessed`);
+    
+    if (unprocessedPosts.length > 0) {
+      console.log('[LinkedIn Filter] 🔍 Debug: Unprocessed posts:', unprocessedPosts.map(p => ({
+        id: p.getAttribute('data-urn') || p.getAttribute('data-id') || 'unknown',
+        classes: Array.from(p.classList),
+        hasText: extractPostText(p).length > 0
+      })));
+    }
+    
+    return { total: allPosts.size, processed: processedPosts.length, unprocessed: unprocessedPosts.length };
+  } catch (error) {
+    console.error('[LinkedIn Filter] Error in debug function:', error);
+    return { total: 0, processed: 0, unprocessed: 0 };
+  }
+}
+
+/**
+ * Force reprocess all posts with better error handling
+ */
+function reprocessAllPosts() {
+  console.debug('[LinkedIn Filter] Reprocessing all posts...');
+  
+  // Reset processing markers
+  resetProcessingMarkers();
+  
+  // Reset hidden count for reprocessing
+  sessionHiddenCount = 0;
+  
+  // Debug current state
+  const debugInfo = debugUnprocessedPosts();
+  console.log('[LinkedIn Filter] Debug info before reprocessing:', debugInfo);
+  
+  // Process all posts again
+  processAllExistingPosts();
+  
+  // Debug final state
+  setTimeout(() => {
+    const finalDebugInfo = debugUnprocessedPosts();
+    console.log('[LinkedIn Filter] Debug info after reprocessing:', finalDebugInfo);
+  }, 2000);
+}
+
 // Handle page unload
 window.addEventListener('beforeunload', cleanup);
 
@@ -618,3 +783,95 @@ setInterval(async () => {
     }
   }
 }, 30000); // Check every 30 seconds (reduced frequency for better performance)
+
+// Periodic health monitoring to prevent observer from stopping
+setInterval(() => {
+  const isFeedPage = location.pathname === '/feed/' || 
+                    location.pathname === '/' || 
+                    location.pathname === '/feed';
+  
+  if (location.hostname.includes('linkedin.com') && isFeedPage) {
+    checkObserverHealth();
+  }
+}, 60000); // Check every 60 seconds (reduced from 15s for better performance)
+
+// Expose debug functions globally for testing
+window.linkedinFilterDebug = {
+  debugUnprocessedPosts,
+  reprocessAllPosts,
+  checkObserverHealth,
+  restartObserver,
+  getCurrentConfig: () => currentConfig,
+  getNormalizedWords: () => Array.from(normalizedWordSet),
+  getHiddenCount: () => sessionHiddenCount
+};
+
+console.log('[LinkedIn Filter] 🔧 Debug functions available at window.linkedinFilterDebug');
+console.log('[LinkedIn Filter] 🔧 Use linkedinFilterDebug.debugUnprocessedPosts() to check for unprocessed posts');
+console.log('[LinkedIn Filter] 🔧 Use linkedinFilterDebug.reprocessAllPosts() to force reprocessing');
+
+// Handle scroll events to ensure observer keeps working (optimized for performance)
+let scrollTimeout = null;
+let lastScrollTime = 0;
+const SCROLL_THROTTLE = 2000; // Only process scroll events every 2 seconds
+
+window.addEventListener('scroll', () => {
+  const now = Date.now();
+  
+  // Throttle scroll events to improve performance
+  if (now - lastScrollTime < SCROLL_THROTTLE) {
+    return;
+  }
+  
+  lastScrollTime = now;
+  
+  // Clear existing timeout
+  if (scrollTimeout) {
+    clearTimeout(scrollTimeout);
+  }
+  
+  // Set a timeout to check observer health after scrolling stops
+  scrollTimeout = setTimeout(() => {
+    const isFeedPage = location.pathname === '/feed/' || 
+                      location.pathname === '/' || 
+                      location.pathname === '/feed';
+    
+    if (location.hostname.includes('linkedin.com') && isFeedPage) {
+      console.debug('[LinkedIn Filter] Scroll stopped, checking observer health...');
+      checkObserverHealth();
+    }
+  }, 5000); // Wait 5 seconds after scrolling stops (increased for better performance)
+}, { passive: true });
+
+// Handle wheel events (mouse wheel, trackpad) - optimized for performance
+let wheelTimeout = null;
+let lastWheelTime = 0;
+const WHEEL_THROTTLE = 2000; // Only process wheel events every 2 seconds
+
+window.addEventListener('wheel', () => {
+  const now = Date.now();
+  
+  // Throttle wheel events to improve performance
+  if (now - lastWheelTime < WHEEL_THROTTLE) {
+    return;
+  }
+  
+  lastWheelTime = now;
+  
+  // Clear existing timeout
+  if (wheelTimeout) {
+    clearTimeout(wheelTimeout);
+  }
+  
+  // Set a timeout to check observer health after wheel stops
+  wheelTimeout = setTimeout(() => {
+    const isFeedPage = location.pathname === '/feed/' || 
+                      location.pathname === '/' || 
+                      location.pathname === '/feed';
+    
+    if (location.hostname.includes('linkedin.com') && isFeedPage) {
+      console.debug('[LinkedIn Filter] Wheel stopped, checking observer health...');
+      checkObserverHealth();
+    }
+  }, 5000); // Wait 5 seconds after wheel stops (increased for better performance)
+}, { passive: true });

@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinkedIn Keyword Filter - Keyword Highlighting Test</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #f8f9fa;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #0a66c2 0%, #004182 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .title {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      opacity: 0.9;
+    }
+
+    .content {
+      padding: 30px;
+    }
+
+    .test-section {
+      margin-bottom: 30px;
+      padding: 20px;
+      border: 2px solid #e1e5e9;
+      border-radius: 8px;
+      background: #f8f9fa;
+    }
+
+    .test-section h3 {
+      color: #333;
+      margin-bottom: 15px;
+      font-size: 18px;
+    }
+
+    .demo-post {
+      background: white;
+      border: 1px solid #e1e5e9;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 15px 0;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .demo-post-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .demo-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0a66c2 0%, #004182 100%);
+      margin-right: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+    }
+
+    .demo-author {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .demo-post-text {
+      line-height: 1.6;
+      color: #333;
+      font-size: 14px;
+    }
+
+    .demo-post-text.highlighted {
+      background: #fff3cd;
+      padding: 10px;
+      border-radius: 6px;
+      border-left: 4px solid #ffc107;
+    }
+
+    .controls {
+      background: white;
+      border: 2px solid #e1e5e9;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .control-group {
+      margin-bottom: 15px;
+    }
+
+    .control-group label {
+      display: block;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .keywords-input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e1e5e9;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 14px;
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .keywords-input:focus {
+      outline: none;
+      border-color: #0a66c2;
+      box-shadow: 0 0 0 3px rgba(10, 102, 194, 0.1);
+    }
+
+    .mode-selector {
+      display: flex;
+      gap: 15px;
+    }
+
+    .radio-option {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .radio-option input[type="radio"] {
+      margin-right: 8px;
+    }
+
+    .radio-option label {
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #0a66c2 0%, #004182 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .info-box {
+      background: #e3f2fd;
+      border: 1px solid #bbdefb;
+      border-radius: 6px;
+      padding: 15px;
+      margin: 20px 0;
+    }
+
+    .info-box h4 {
+      color: #1976d2;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    .info-box p {
+      color: #1976d2;
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+
+         .highlighted-keyword {
+       background: #e3f2fd;
+       padding: 2px 4px;
+       border-radius: 3px;
+       font-weight: bold;
+       color: #0a66c2;
+       border: 1px solid #bbdefb;
+     }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 class="title">LinkedIn Keyword Filter</h1>
+      <p class="subtitle">Bold Keyword Highlighting Test - See Found Keywords in Bold Blue</p>
+    </div>
+
+    <div class="content">
+      <div class="info-box">
+                 <h4>🎯 New Feature: Bold Keyword Highlighting</h4>
+         <p><strong>What's new:</strong> When the plugin finds keywords in posts, it now highlights them by making them <strong>bold</strong> while preserving all original formatting.</p>
+         <p><strong>How it works:</strong> In "Allow List" mode, visible posts with matching keywords will show those keywords in <strong>bold blue text</strong>.</p>
+         <p><strong>Benefits:</strong> Users can easily see which words triggered the filter, and the original text formatting (links, italics, etc.) remains intact.</p>
+      </div>
+
+      <div class="controls">
+        <div class="control-group">
+          <label>Filter Mode:</label>
+          <div class="mode-selector">
+            <div class="radio-option">
+              <input type="radio" id="modeBlacklist" name="mode" value="blacklist" checked>
+              <label for="modeBlacklist">Block List (Hide posts with keywords)</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" id="modeWhitelist" name="mode" value="whitelist">
+              <label for="modeWhitelist">Allow List (Show only posts with keywords)</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label>Keywords (one per line or comma-separated):</label>
+          <textarea 
+            class="keywords-input" 
+            id="keywordsInput" 
+            placeholder="Enter keywords to test highlighting&#10;Example:&#10;job&#10;vacancy, internship&#10;developer&#10;marketing"
+          >job
+vacancy
+internship
+developer
+marketing</textarea>
+        </div>
+
+        <button class="btn" onclick="applyFilter()">🔍 Apply Filter & Highlight</button>
+        <button class="btn" onclick="clearHighlights()" style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%); margin-left: 10px;">🧹 Clear Highlights</button>
+      </div>
+
+      <div class="test-section">
+        <h3>📝 Sample LinkedIn Posts</h3>
+        
+        <div class="demo-post" data-post-id="1">
+          <div class="demo-post-header">
+            <div class="demo-avatar">JD</div>
+            <div class="demo-author">John Developer</div>
+          </div>
+          <div class="demo-post-text" id="post1">
+            Looking for a new job opportunity in software development. I have experience with React, Node.js, and Python. 
+            Currently working on a project that involves machine learning and AI. Anyone hiring for developer positions?
+          </div>
+        </div>
+
+        <div class="demo-post" data-post-id="2">
+          <div class="demo-post-header">
+            <div class="demo-avatar">SM</div>
+            <div class="demo-author">Sarah Marketing</div>
+          </div>
+          <div class="demo-post-text" id="post2">
+            Excited to share that we're hiring for marketing positions! We have openings for digital marketing specialists, 
+            content creators, and social media managers. Great company culture and remote work options available.
+          </div>
+        </div>
+
+        <div class="demo-post" data-post-id="3">
+          <div class="demo-post-header">
+            <div class="demo-avatar">AI</div>
+            <div class="demo-author">Alex Intern</div>
+          </div>
+          <div class="demo-post-text" id="post3">
+            Just finished my internship program and learned so much about data science and machine learning. 
+            The experience was invaluable for my career development. Now looking for full-time opportunities!
+          </div>
+        </div>
+
+        <div class="demo-post" data-post-id="4">
+          <div class="demo-post-header">
+            <div class="demo-avatar">TC</div>
+            <div class="demo-author">Tech Company</div>
+          </div>
+          <div class="demo-post-text" id="post4">
+            We're excited to announce our new product launch! Our team has been working hard on this innovative solution 
+            that combines artificial intelligence with user experience design. Stay tuned for more updates!
+          </div>
+        </div>
+      </div>
+
+      <div class="test-section">
+        <h3>📊 Filter Results</h3>
+        <div id="filterResults">
+          <p>Click "Apply Filter & Highlight" to see the results...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentMode = 'blacklist';
+    let currentKeywords = [];
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      // Set up mode change listener
+      document.querySelectorAll('input[name="mode"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+          currentMode = this.value;
+          console.log('Mode changed to:', currentMode);
+        });
+      });
+
+      // Set up keywords input listener
+      document.getElementById('keywordsInput').addEventListener('input', function() {
+        currentKeywords = parseKeywords(this.value);
+      });
+
+      // Parse initial keywords
+      currentKeywords = parseKeywords(document.getElementById('keywordsInput').value);
+    });
+
+    function parseKeywords(input) {
+      if (!input) return [];
+      return input
+        .split(/[,\n\r]+/)
+        .map(word => word.trim().toLowerCase())
+        .filter(word => word.length > 0);
+    }
+
+    function normalizeText(text) {
+      return text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove accents
+        .replace(/[^\w\s]/g, ' ') // Remove punctuation
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .trim();
+    }
+
+    function matchesAny(text, keywords) {
+      const normalizedText = normalizeText(text);
+      const textWords = normalizedText.split(/\s+/);
+      
+      for (const keyword of keywords) {
+        if (textWords.includes(keyword)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+         function highlightKeywords(text, keywords) {
+       let highlightedText = text;
+       
+       keywords.forEach(keyword => {
+         if (keyword && keyword.length > 0) {
+           // Create regex for case-insensitive matching
+           const regex = new RegExp(`\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+           // Replace with bold version
+           highlightedText = highlightedText.replace(regex, `<strong style="color: #0a66c2; font-weight: bold;">${keyword}</strong>`);
+         }
+       });
+       
+       return highlightedText;
+     }
+
+    function applyFilter() {
+      const posts = document.querySelectorAll('.demo-post');
+      let hiddenCount = 0;
+      let visibleCount = 0;
+      let highlightedCount = 0;
+
+      posts.forEach(post => {
+        const postText = post.querySelector('.demo-post-text');
+        const originalText = postText.getAttribute('data-original-text') || postText.textContent;
+        
+        // Store original text if not already stored
+        if (!postText.hasAttribute('data-original-text')) {
+          postText.setAttribute('data-original-text', originalText);
+        }
+
+        const hasMatch = matchesAny(originalText, currentKeywords);
+        let shouldHide = false;
+
+        if (currentMode === 'blacklist') {
+          shouldHide = hasMatch;
+        } else { // whitelist
+          shouldHide = !hasMatch;
+        }
+
+        if (shouldHide) {
+          post.style.display = 'none';
+          hiddenCount++;
+        } else {
+          post.style.display = 'block';
+          visibleCount++;
+          
+          // Highlight keywords in visible posts for whitelist mode
+          if (currentMode === 'whitelist' && hasMatch) {
+            const highlightedText = highlightKeywords(originalText, currentKeywords);
+                         postText.innerHTML = highlightedText.replace(/\b(\w+)\b/g, (match, word) => {
+               if (currentKeywords.includes(word.toLowerCase())) {
+                 return `<span class="highlighted-keyword">${word}</span>`;
+               }
+               return word;
+             });
+            highlightedCount++;
+          } else {
+            // Restore original text
+            postText.textContent = originalText;
+          }
+        }
+      });
+
+      // Update results
+      const resultsDiv = document.getElementById('filterResults');
+      resultsDiv.innerHTML = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+          <div style="background: #d4edda; padding: 15px; border-radius: 6px; text-align: center;">
+            <h4 style="color: #155724; margin-bottom: 5px;">👁️ Visible Posts</h4>
+            <p style="color: #155724; font-size: 24px; font-weight: bold;">${visibleCount}</p>
+          </div>
+          <div style="background: #f8d7da; padding: 15px; border-radius: 6px; text-align: center;">
+            <h4 style="color: #721c24; margin-bottom: 5px;">🚫 Hidden Posts</h4>
+            <p style="color: #721c24; font-size: 24px; font-weight: bold;">${hiddenCount}</p>
+          </div>
+          <div style="background: #fff3cd; padding: 15px; border-radius: 6px; text-align: center;">
+            <h4 style="color: #856404; margin-bottom: 5px;">✨ Highlighted Keywords</h4>
+            <p style="color: #856404; font-size: 24px; font-weight: bold;">${highlightedCount}</p>
+          </div>
+        </div>
+        <div style="margin-top: 15px; padding: 15px; background: #e9ecef; border-radius: 6px;">
+          <p><strong>Mode:</strong> ${currentMode === 'blacklist' ? 'Block List' : 'Allow List'}</p>
+          <p><strong>Keywords:</strong> ${currentKeywords.join(', ')}</p>
+                     <p><strong>Note:</strong> In Allow List mode, found keywords are highlighted in <span class="highlighted-keyword">bold blue</span> to show which words triggered the filter.</p>
+        </div>
+      `;
+    }
+
+    function clearHighlights() {
+      const posts = document.querySelectorAll('.demo-post');
+      
+      posts.forEach(post => {
+        const postText = post.querySelector('.demo-post-text');
+        const originalText = postText.getAttribute('data-original-text');
+        
+        if (originalText) {
+          postText.textContent = originalText;
+        }
+        
+        post.style.display = 'block';
+      });
+
+      document.getElementById('filterResults').innerHTML = '<p>Highlights cleared. All posts are visible.</p>';
+    }
+  </script>
+</body>
+</html>
